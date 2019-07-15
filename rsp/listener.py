@@ -44,7 +44,6 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
         self._conn_pool = pool
 
     async def stop(self):
-        await self._conn_pool.stop()
         self._server.close()
         await self._server.wait_closed()
         while self._children:
@@ -78,9 +77,10 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
                                 "\"NO AUTHENTICATION REQUIRED\" method")
 
         writer.write(b'\x05\x00')
+        await writer.drain()
 
         req_header = await reader.readexactly(SOCKS5REQ.size)
-        req_ver, req_cmd, req_rsv, req_atype = req_header.unpack(req_header)
+        req_ver, req_cmd, req_rsv, req_atyp = SOCKS5REQ.unpack(req_header)
         if req_ver != 5:
             ...
             raise BadVersion("Client specified inappropriate version "
@@ -102,7 +102,7 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
                 writer.write(b'\x05\x01')
                 raise BadAddress("Client requested connection to 0-length "
                                  "domain name")
-            address = await reader.readexactly(fqdn_len).decode('ascii')
+            address = (await reader.readexactly(fqdn_len)).decode('ascii')
         elif req_atyp == 1:
             # IPv4 address
             address = await reader.readexactly(4)
@@ -114,6 +114,9 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
         port = await reader.readexactly(2)
         port = int.from_bytes(port, 'big')
         return req_cmd, address, port
+
+    async def _socks_ok(reader, writer):
+        pass
 
     async def _pump(self, writer, reader):
         while True:
@@ -143,7 +146,10 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
             if cmd != 1:
                 writer.write(b'\x05\x07')
                 return
-            dst_reader, dst_writer = await self._conn_pool.get() 
+            #dst_reader, dst_writer = await self._conn_pool.get() 
+            self._logger.info("Client %s requested connection to %s:%s",
+                              peer_addr, dst_addr, dst_port)
+            dst_reader, dst_writer = await asyncio.open_connection(dst_addr, dst_port)
             await asyncio.gather(self._pump(writer, dst_reader),
                                  self._pump(dst_writer, reader))
         except asyncio.CancelledError:  # pylint: disable=try-except-raise

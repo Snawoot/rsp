@@ -8,7 +8,7 @@ from functools import partial
 
 from sdnotify import SystemdNotifier
 
-from .listener import Listener
+from .listener import SocksListener
 from .constants import LogLevel
 from . import utils
 from .connpool import ConnPool
@@ -69,21 +69,20 @@ def parse_args():
 async def amain(args, loop):  # pragma: no cover
     logger = logging.getLogger('MAIN')
 
-    pool = ConnPool(dst_address=args.dst_address,
-                    dst_port=args.dst_port,
-                    ssl_context=context,
-                    ssl_hostname=ssl_hostname,
-                    timeout=args.timeout,
-                    backoff=args.backoff,
-                    ttl=args.ttl,
-                    size=args.pool_size,
-                    loop=loop)
-    await pool.start()
-    server = Listener(listen_address=args.bind_address,
+    #pool = ConnPool(dst_address=args.dst_address,
+    #                dst_port=args.dst_port,
+    #                ssl_context=context,
+    #                ssl_hostname=ssl_hostname,
+    #                timeout=args.timeout,
+    #                backoff=args.backoff,
+    #                ttl=args.ttl,
+    #                size=args.pool_size,
+    #                loop=loop)
+    #await pool.start()
+    server = SocksListener(listen_address=args.bind_address,
                       listen_port=args.bind_port,
                       timeout=args.timeout,
-                      pool=pool,
-                      proxy_protocol=proxy_protocol,
+                      pool=None,
                       loop=loop)
     await server.start()
     logger.info("Server started.")
@@ -101,14 +100,14 @@ async def amain(args, loop):  # pragma: no cover
     await loop.run_in_executor(None, notifier.notify, "STOPPING=1")
     beat.cancel()
     await server.stop()
-    await pool.stop()
+    #await pool.stop()
 
 
 def main():  # pragma: no cover
     args = parse_args()
     with utils.AsyncLoggingHandler(args.logfile) as log_handler:
         logger = utils.setup_logger('MAIN', args.verbosity, log_handler)
-        utils.setup_logger('Listener', args.verbosity, log_handler)
+        utils.setup_logger('SocksListener', args.verbosity, log_handler)
         utils.setup_logger('ConnPool', args.verbosity, log_handler)
 
         logger.info("Starting eventloop...")
