@@ -6,6 +6,6 @@ class PooledSSHConnector:
         self._pool = pool
         self._timeout = timeout
 
-    async def connect(host, port):
-        conn = await self._conn_pool.get() 
-        return await wait_for(conn.open_connection(host, port), self._timeout)
+    async def connect(self, host, port):
+        conn = await self._pool.get() 
+        return await asyncio.wait_for(conn.open_connection(host, port), self._timeout)
