@@ -27,9 +27,6 @@ class SSHPool:
         self._backoff = backoff
         self._waiters = collections.deque()
         self._reserve = collections.deque()
-        self._respawn_required = asyncio.Event()
-        self._respawn_required.set()
-        self._respawn_coro = None
         self._conn_builders = set()
 
     async def start(self):
@@ -69,7 +66,7 @@ class SSHPool:
                 conn = await asyncio.wait_for(
                     asyncssh.connect(self._dst_address,
                                      self._dst_port,
-                                     options=self._ssh_options),
+                                     options=self._ssh_options()),
                     self._timeout)
             except asyncio.TimeoutError:
                 self._logger.error("Connection to upstream timed out.")
@@ -94,7 +91,7 @@ class SSHPool:
                     self._reserve.append(elem)
 
                     try:
-                        await asyncio.wait_for(event.wait(), self._ttl)
+                        await asyncio.wait_for(grabbed.wait(), self._ttl)
                     except asyncio.TimeoutError:
                         if not grabbed.is_set():
                             try_remove_from_queue(elem)

@@ -96,7 +96,7 @@ def ssh_options_from_args(args):
 
 async def amain(args, loop):  # pragma: no cover
     logger = logging.getLogger('MAIN')
-    options = ssh_options_from_args(args)
+    options = partial(ssh_options_from_args, args)
 
     pool = SSHPool(dst_address=args.dst_address,
                    dst_port=args.dst_port,
