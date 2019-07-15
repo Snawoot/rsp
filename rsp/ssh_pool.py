@@ -110,3 +110,10 @@ class SSHPool:
             self._waiters.append(fut)
             self._logger.debug("Awaiting for free connection.")
             return await fut
+
+    async def __aenter__(self):
+        await self.start()
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        await self.stop()

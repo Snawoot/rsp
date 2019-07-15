@@ -12,7 +12,8 @@ import asyncssh
 from .listener import SocksListener
 from .constants import LogLevel
 from . import utils
-from .connpool import ConnPool
+from .ssh_pool import SSHPool
+from .connector import PooledSSHConnector
 
 
 def parse_args():
@@ -95,39 +96,38 @@ def ssh_options_from_args(args):
 
 async def amain(args, loop):  # pragma: no cover
     logger = logging.getLogger('MAIN')
+    options = ssh_options_from_args(args)
 
-    #pool = ConnPool(dst_address=args.dst_address,
-    #                dst_port=args.dst_port,
-    #                ssl_context=context,
-    #                ssl_hostname=ssl_hostname,
-    #                timeout=args.timeout,
-    #                backoff=args.backoff,
-    #                ttl=args.ttl,
-    #                size=args.pool_size,
-    #                loop=loop)
-    #await pool.start()
-    server = SocksListener(listen_address=args.bind_address,
-                      listen_port=args.bind_port,
-                      timeout=args.timeout,
-                      pool=None,
-                      loop=loop)
-    await server.start()
-    logger.info("Server started.")
+    pool = SSHPool(dst_address=args.dst_address,
+                   dst_port=args.dst_port,
+                   ssh_options=options,
+                   timeout=args.timeout,
+                   backoff=args.backoff,
+                   ttl=args.ttl,
+                   size=args.pool_size,
+                   loop=loop)
+    async with pool:
+        connector = PooledSSHConnector(pool, args.timeout)
+        server = SocksListener(listen_address=args.bind_address,
+                          listen_port=args.bind_port,
+                          timeout=args.timeout,
+                          connector=connector.connect,
+                          loop=loop)
+        async with server:
+            logger.info("Server started.")
 
-    exit_event = asyncio.Event()
-    beat = asyncio.ensure_future(utils.heartbeat())
-    sig_handler = partial(utils.exit_handler, exit_event)
-    signal.signal(signal.SIGTERM, sig_handler)
-    signal.signal(signal.SIGINT, sig_handler)
-    notifier = await loop.run_in_executor(None, SystemdNotifier)
-    await loop.run_in_executor(None, notifier.notify, "READY=1")
-    await exit_event.wait()
+            exit_event = asyncio.Event()
+            beat = asyncio.ensure_future(utils.heartbeat())
+            sig_handler = partial(utils.exit_handler, exit_event)
+            signal.signal(signal.SIGTERM, sig_handler)
+            signal.signal(signal.SIGINT, sig_handler)
+            notifier = await loop.run_in_executor(None, SystemdNotifier)
+            await loop.run_in_executor(None, notifier.notify, "READY=1")
+            await exit_event.wait()
 
-    logger.debug("Eventloop interrupted. Shutting down server...")
-    await loop.run_in_executor(None, notifier.notify, "STOPPING=1")
-    beat.cancel()
-    await server.stop()
-    #await pool.stop()
+            logger.debug("Eventloop interrupted. Shutting down server...")
+            await loop.run_in_executor(None, notifier.notify, "STOPPING=1")
+            beat.cancel()
 
 
 def main():  # pragma: no cover
@@ -136,7 +136,6 @@ def main():  # pragma: no cover
         logger = utils.setup_logger('MAIN', args.verbosity, log_handler)
         utils.setup_logger('SocksListener', args.verbosity, log_handler)
         utils.setup_logger('SSHPool', args.verbosity, log_handler)
-        utils.setup_logger('PooledSSHConnector', args.verbosity, log_handler)
 
         logger.info("Starting eventloop...")
         if not args.disable_uvloop:

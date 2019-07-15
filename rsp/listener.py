@@ -32,7 +32,7 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
     def __init__(self, *,
                  listen_address,
                  listen_port,
-                 pool,
+                 connector=asyncio.open_connection,
                  timeout=None,
                  loop=None):
         self._loop = loop if loop is not None else asyncio.get_event_loop()
@@ -41,7 +41,7 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
         self._listen_port = listen_port
         self._children = set()
         self._server = None
-        self._conn_pool = pool
+        self._connector = connector
 
     async def stop(self):
         self._server.close()
@@ -160,10 +160,9 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
             if cmd != 1:
                 writer.write(b'\x05\x07')
                 return
-            #dst_reader, dst_writer = await self._conn_pool.get() 
             self._logger.info("Client %s requested connection to %s:%s",
                               peer_addr, dst_addr, dst_port)
-            dst_reader, dst_writer = await asyncio.open_connection(dst_addr, dst_port)
+            dst_reader, dst_writer = await self._connector(dst_addr, dst_port)
             await self._socks_ok(reader, writer, writer.get_extra_info('sockname'))
             await asyncio.gather(self._pump(writer, dst_reader),
                                  self._pump(dst_writer, reader))
@@ -190,3 +189,10 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
                                                   self._listen_address,
                                                   self._listen_port)
         self._logger.info("Server ready.")
+
+    async def __aenter__(self):
+        await self.start()
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        await self.stop()
