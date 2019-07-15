@@ -2,18 +2,38 @@ import asyncio
 import logging
 import collections
 from functools import partial
+import struct
+import socket
 
 from .constants import BUFSIZE
 from .utils import get_orig_dst
 
 
-class Listener:  # pylint: disable=too-many-instance-attributes
+class SocksException(Exception):
+    pass
+
+
+class BadVersion(SocksException):
+    pass
+
+
+class BadAuthMethod(SocksException):
+    pass
+
+
+class BadAddress(SocksException):
+    pass
+
+
+SOCKS5REQ = struct.Struct('!BBBB')
+
+
+class SocksListener:  # pylint: disable=too-many-instance-attributes
     def __init__(self, *,
                  listen_address,
                  listen_port,
                  pool,
                  timeout=None,
-                 proxy_protocol=None,
                  loop=None):
         self._loop = loop if loop is not None else asyncio.get_event_loop()
         self._logger = logging.getLogger(self.__class__.__name__)
@@ -22,7 +42,6 @@ class Listener:  # pylint: disable=too-many-instance-attributes
         self._children = set()
         self._server = None
         self._conn_pool = pool
-        self._proxy_protocol = proxy_protocol
 
     async def stop(self):
         await self._conn_pool.stop()
@@ -39,6 +58,62 @@ class Listener:  # pylint: disable=too-many-instance-attributes
             # workaround for TCP server keeps spawning handlers for a while
             # after wait_closed() completed
             await asyncio.sleep(.5)
+
+    async def _socks_prologue(self, reader, writer):
+        ver = await reader.readexactly(1)
+        if ver != b'\x05':
+            raise BadVersion("Incorrect protocol version")
+
+        n_methods = await reader.readexactly(1)
+        n_methods = int.from_bytes(n_methods, 'big')
+        if n_methods == 0:
+            writer.write(b'\x05\xff')
+            raise BadAuthMethod("Client didn't proposed any auth method, "
+                                "even \"NO AUTHENTICATION REQUIRED\" method")
+
+        methods = await reader.readexactly(n_methods)
+        if b'\x00' not in methods:
+            writer.write(b'\x05\xff')
+            raise BadAuthMethod("Client didn't proposed the only suitable "
+                                "\"NO AUTHENTICATION REQUIRED\" method")
+
+        writer.write(b'\x05\x00')
+
+        req_header = await reader.readexactly(SOCKS5REQ.size)
+        req_ver, req_cmd, req_rsv, req_atype = req_header.unpack(req_header)
+        if req_ver != 5:
+            ...
+            raise BadVersion("Client specified inappropriate version "
+                             "in connection request")
+        if not (1 <= req_cmd <= 3):
+            writer.write(b'\x05\x07')
+            raise UnsupportedCommand("Client requested unsupported command")
+
+        if req_atyp not in (1,3,4):
+            writer.write(b'\x05\x08')
+            raise UnsupportedAddress("Client requested connection to "
+                                     "unsupported address type")
+
+        if req_atyp == 3:
+            # FQDN address
+            fqdn_len = await reader.readexactly(1)
+            fqdn_len = int.from_bytes(fqdn_len, 'big')
+            if fqdn_len == 0:
+                writer.write(b'\x05\x01')
+                raise BadAddress("Client requested connection to 0-length "
+                                 "domain name")
+            address = await reader.readexactly(fqdn_len).decode('ascii')
+        elif req_atyp == 1:
+            # IPv4 address
+            address = await reader.readexactly(4)
+            address = socket.inet_ntoa(address)
+        elif req_atyp == 4:
+            # IPv6 address
+            address = await reader.readexactly(16)
+            address = socket.inet_ntop(socket.AF_INET6, address)
+        port = await reader.readexactly(2)
+        port = int.from_bytes(port, 'big')
+        return req_cmd, address, port
 
     async def _pump(self, writer, reader):
         while True:
@@ -62,22 +137,13 @@ class Listener:  # pylint: disable=too-many-instance-attributes
     async def handler(self, reader, writer):
         peer_addr = writer.transport.get_extra_info('peername')
         self._logger.info("Client %s connected", str(peer_addr))
-        if self._proxy_protocol:
-            try:
-                sock = writer.transport.get_extra_info('socket')
-                orig_dst = get_orig_dst(sock)
-                prologue = self._proxy_protocol.prologue(peer_addr, orig_dst)
-                self._logger.debug("Client %s orig_dst=%s", str(peer_addr), str(orig_dst))
-                self._logger.debug("Client %s prologue=%s", str(peer_addr), repr(prologue))
-            except Exception as exc:
-                self._logger.exception("Unable to handle connection transparency: "
-                                   "%s", str(exc))
-                return
         dst_writer = None
         try:
+            cmd, dst_addr, dst_port = await self._socks_prologue(reader, writer)
+            if cmd != 1:
+                writer.write(b'\x05\x07')
+                return
             dst_reader, dst_writer = await self._conn_pool.get() 
-            if self._proxy_protocol:
-                dst_writer.write(prologue)
             await asyncio.gather(self._pump(writer, dst_reader),
                                  self._pump(dst_writer, reader))
         except asyncio.CancelledError:  # pylint: disable=try-except-raise
