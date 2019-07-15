@@ -7,6 +7,7 @@ import signal
 from functools import partial
 
 from sdnotify import SystemdNotifier
+import asyncssh
 
 from .listener import SocksListener
 from .constants import LogLevel
@@ -22,6 +23,8 @@ def parse_args():
     parser.add_argument("dst_address",
                         help="target hostname")
     parser.add_argument("dst_port",
+                        nargs="?",
+                        default=22,
                         type=utils.check_port,
                         help="target port")
     parser.add_argument("-v", "--verbosity",
@@ -47,7 +50,7 @@ def parse_args():
 
     pool_group = parser.add_argument_group('pool options')
     pool_group.add_argument("-n", "--pool-size",
-                            default=25,
+                            default=15,
                             type=utils.check_positive_int,
                             help="connection pool size")
     pool_group.add_argument("-B", "--backoff",
@@ -55,7 +58,7 @@ def parse_args():
                             type=utils.check_positive_float,
                             help="delay after connection attempt failure in seconds")
     pool_group.add_argument("-T", "--ttl",
-                            default=30,
+                            default=60,
                             type=utils.check_positive_float,
                             help="lifetime of idle pool connection in seconds")
     pool_group.add_argument("-w", "--timeout",
@@ -63,10 +66,36 @@ def parse_args():
                             type=utils.check_positive_float,
                             help="server connect timeout")
 
+    ssh_group = parser.add_argument_group('SSH options')
+    ssh_group.add_argument("-L", "--login",
+                           help="SSH login. Default is name of current user")
+    ssh_group.add_argument("-I", "--identity",
+                           action="append",
+                           help="SSH private key file. By default program looks "
+                           "for SSH keys in usual locations. This option may be "
+                           "specified multiple times",
+                           metavar="KEY_FILE")
+    ssh_group.add_argument("-P", "--password",
+                           help="SSH password. If not specified, password auth"
+                           " will be disabled")
+
     return parser.parse_args()
+
+def ssh_options_from_args(args):
+    kw = dict()
+    kw['gss_host'] = None
+    if args.login is not None:
+        kw['username'] = args.login
+    if args.identity is not None:
+        kw['client_keys'] = list(args.identity)
+    if args.password is not None:
+        kw['password'] = args.password
+    return asyncssh.SSHClientConnectionOptions(**kw)
 
 
 async def amain(args, loop):  # pragma: no cover
+    print(args)
+    assert 0
     logger = logging.getLogger('MAIN')
 
     #pool = ConnPool(dst_address=args.dst_address,
@@ -119,8 +148,6 @@ def main():  # pragma: no cover
                             "Falling back to built-in event loop.")
 
         loop = asyncio.get_event_loop()
-        # workaround for Python bug on pending writes to SSL connections
-        utils.ignore_ssl_error(loop)
         loop.run_until_complete(amain(args, loop))
         loop.close()
         logger.info("Server finished its work.")
