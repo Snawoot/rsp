@@ -94,8 +94,6 @@ def ssh_options_from_args(args):
 
 
 async def amain(args, loop):  # pragma: no cover
-    print(args)
-    assert 0
     logger = logging.getLogger('MAIN')
 
     #pool = ConnPool(dst_address=args.dst_address,
@@ -137,7 +135,8 @@ def main():  # pragma: no cover
     with utils.AsyncLoggingHandler(args.logfile) as log_handler:
         logger = utils.setup_logger('MAIN', args.verbosity, log_handler)
         utils.setup_logger('SocksListener', args.verbosity, log_handler)
-        utils.setup_logger('ConnPool', args.verbosity, log_handler)
+        utils.setup_logger('SSHPool', args.verbosity, log_handler)
+        utils.setup_logger('PooledSSHConnector', args.verbosity, log_handler)
 
         logger.info("Starting eventloop...")
         if not args.disable_uvloop:
