@@ -6,7 +6,7 @@ import struct
 import socket
 
 from .constants import BUFSIZE
-from .utils import get_orig_dst
+from .utils import detect_af
 
 
 class SocksException(Exception):
@@ -77,7 +77,6 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
                                 "\"NO AUTHENTICATION REQUIRED\" method")
 
         writer.write(b'\x05\x00')
-        await writer.drain()
 
         req_header = await reader.readexactly(SOCKS5REQ.size)
         req_ver, req_cmd, req_rsv, req_atyp = SOCKS5REQ.unpack(req_header)
@@ -115,8 +114,23 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
         port = int.from_bytes(port, 'big')
         return req_cmd, address, port
 
-    async def _socks_ok(reader, writer):
-        pass
+    async def _socks_ok(self, reader, writer, peer):
+        peer_addr, peer_port = peer
+        peer_af = None
+        try:
+            peer_af = detect_af(peer_addr)
+        except:
+            pass
+        if peer_af == socket.AF_INET:
+            resp = (b'\x05\x00\x00\x01' + socket.inet_aton(peer_addr) +
+                    peer_port.to_bytes(2, 'big'))
+        elif peer_af == socket.AF_INET6:
+            resp = (b'\x05\x00\x00\x04' + socket.inet_pton(AF_INET6, peer_addr) +
+                    peer_port.to_bytes(2, 'big'))
+        else:
+            resp = b'\x05\x00\x00\x03\x00\x00\x00'
+        self._logger.debug("Sending response to client: %s", resp.hex())
+        writer.write(resp)
 
     async def _pump(self, writer, reader):
         while True:
@@ -150,6 +164,7 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
             self._logger.info("Client %s requested connection to %s:%s",
                               peer_addr, dst_addr, dst_port)
             dst_reader, dst_writer = await asyncio.open_connection(dst_addr, dst_port)
+            await self._socks_ok(reader, writer, writer.get_extra_info('sockname'))
             await asyncio.gather(self._pump(writer, dst_reader),
                                  self._pump(dst_writer, reader))
         except asyncio.CancelledError:  # pylint: disable=try-except-raise
