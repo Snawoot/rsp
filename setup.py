@@ -31,6 +31,7 @@ setup(name='rsp',
       entry_points={
           'console_scripts': [
               'rsp=rsp.__main__:main',
+              'rsp-trust=rsp.trust:main',
           ],
       },
       classifiers=[

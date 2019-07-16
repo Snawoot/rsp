@@ -1,10 +1,12 @@
+#!/usr/bin/env python3
+
 import sys
 import argparse
 import asyncio
 import logging
-import ssl
 import signal
 from functools import partial
+import os.path
 
 from sdnotify import SystemdNotifier
 import asyncssh
@@ -73,18 +75,26 @@ def parse_args():
     ssh_group.add_argument("-I", "--identity",
                            action="append",
                            help="SSH private key file. By default program looks "
-                           "for SSH keys in usual locations. This option may be "
-                           "specified multiple times",
+                           "for SSH keys in usual locations, including SSH "
+                           "agent socket. This option may be specified "
+                           "multiple times",
                            metavar="KEY_FILE")
     ssh_group.add_argument("-P", "--password",
                            help="SSH password. If not specified, password auth"
                            " will be disabled")
+    ssh_group.add_argument("-H", "--hosts-file",
+                           default=os.path.join(os.path.expanduser("~"),
+                                                '.rsp',
+                                                'known_hosts'),
+                           help="overrides known_hosts file location",
+                           metavar="FILE")
 
     return parser.parse_args()
 
-def ssh_options_from_args(args):
+def ssh_options_from_args(args, known_hosts):
     kw = dict()
     kw['gss_host'] = None
+    kw['known_hosts'] = known_hosts
     if args.login is not None:
         kw['username'] = args.login
     if args.identity is not None:
@@ -96,7 +106,8 @@ def ssh_options_from_args(args):
 
 async def amain(args, loop):  # pragma: no cover
     logger = logging.getLogger('MAIN')
-    options = partial(ssh_options_from_args, args)
+    known_hosts = asyncssh.read_known_hosts(args.hosts_file)
+    options = partial(ssh_options_from_args, args, known_hosts)
 
     pool = SSHPool(dst_address=args.dst_address,
                    dst_port=args.dst_port,
@@ -149,3 +160,7 @@ def main():  # pragma: no cover
         loop.run_until_complete(amain(args, loop))
         loop.close()
         logger.info("Server finished its work.")
+
+
+if __name__ == '__main__':
+    main()
