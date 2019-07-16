@@ -37,6 +37,12 @@ def parse_args():
 
 def main():  # pragma: no cover
     args = parse_args()
+    if os.access(args.hosts_file, os.R_OK):
+        known_hosts = asyncssh.read_known_hosts(args.hosts_file)
+        match = known_hosts.match(args.dst_address, "0.0.0.0", args.dst_port)[0]
+        if match:
+            print("Host already added to known_hosts", file=sys.stderr)
+            exit(4)
     loop = asyncio.get_event_loop()
     hostkey = loop.run_until_complete(
         asyncssh.get_server_host_key(args.dst_address, args.dst_port))
@@ -49,11 +55,12 @@ def main():  # pragma: no cover
     inp = input("Do you want to trust this key (yes/no)? ").lower()
     while True:
         if inp == 'yes':
+            hostkey_export = hostkey.export_public_key('openssh').\
+                decode('ascii').\
+                rstrip('\n')
             os.makedirs(os.path.dirname(args.hosts_file), mode=0o700, exist_ok=True)
             with open(args.hosts_file, 'a') as f:
-                print("%s %s" % (args.dst_address,
-                                 hostkey.export_public_key('openssh').decode('ascii')),
-                      file=f)
+                print("%s %s" % (args.dst_address, hostkey_export), file=f)
                 exit(0)
         elif inp == 'no':
             exit(0)
