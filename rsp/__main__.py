@@ -15,7 +15,7 @@ from .listener import SocksListener
 from .constants import LogLevel
 from . import utils
 from .ssh_pool import SSHPool
-from .connector import PooledSSHConnector
+from .ratelimit import Ratelimit
 
 
 def parse_args():
@@ -53,21 +53,21 @@ def parse_args():
 
     pool_group = parser.add_argument_group('pool options')
     pool_group.add_argument("-n", "--pool-size",
-                            default=15,
+                            default=30,
                             type=utils.check_positive_int,
-                            help="connection pool size")
+                            help="target number of steady connections")
     pool_group.add_argument("-B", "--backoff",
                             default=5,
                             type=utils.check_positive_float,
                             help="delay after connection attempt failure in seconds")
-    pool_group.add_argument("-T", "--ttl",
-                            default=60,
-                            type=utils.check_positive_float,
-                            help="lifetime of idle pool connection in seconds")
     pool_group.add_argument("-w", "--timeout",
                             default=4,
                             type=utils.check_positive_float,
                             help="server connect timeout")
+    pool_group.add_argument("-r", "--connect-rate",
+                            default=0.5,
+                            type=utils.check_nonnegative_float,
+                            help="limit for new pool connections per second")
 
     ssh_group = parser.add_argument_group('SSH options')
     ssh_group.add_argument("-L", "--login",
@@ -109,20 +109,20 @@ async def amain(args, loop):  # pragma: no cover
     known_hosts = asyncssh.read_known_hosts(args.hosts_file)
     options = partial(ssh_options_from_args, args, known_hosts)
 
+    ratelimit = Ratelimit(args.connect_rate)
     pool = SSHPool(dst_address=args.dst_address,
                    dst_port=args.dst_port,
                    ssh_options=options,
                    timeout=args.timeout,
                    backoff=args.backoff,
-                   ttl=args.ttl,
+                   ratelimit=ratelimit,
                    size=args.pool_size,
                    loop=loop)
     async with pool:
-        connector = PooledSSHConnector(pool, args.timeout)
         server = SocksListener(listen_address=args.bind_address,
                           listen_port=args.bind_port,
                           timeout=args.timeout,
-                          connector=connector.connect,
+                          pool=pool,
                           loop=loop)
         async with server:
             logger.info("Server started.")

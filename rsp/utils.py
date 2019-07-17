@@ -78,6 +78,19 @@ def check_positive_float(value):
     return fvalue
 
 
+def check_nonnegative_float(value):
+    def fail():
+        raise argparse.ArgumentTypeError(
+            "%s is not a valid value" % value)
+    try:
+        fvalue = float(value)
+    except ValueError:
+        fail()
+    if fvalue < 0:
+        fail()
+    return fvalue
+
+
 def check_positive_int(value):
     def fail():
         raise argparse.ArgumentTypeError(

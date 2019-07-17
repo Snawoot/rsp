@@ -32,7 +32,7 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
     def __init__(self, *,
                  listen_address,
                  listen_port,
-                 connector=asyncio.open_connection,
+                 pool,
                  timeout=None,
                  loop=None):
         self._loop = loop if loop is not None else asyncio.get_event_loop()
@@ -41,7 +41,7 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
         self._listen_port = listen_port
         self._children = set()
         self._server = None
-        self._connector = connector
+        self._pool = pool
 
     async def stop(self):
         self._server.close()
@@ -162,10 +162,11 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
                 return
             self._logger.info("Client %s requested connection to %s:%s",
                               peer_addr, dst_addr, dst_port)
-            dst_reader, dst_writer = await self._connector(dst_addr, dst_port)
-            await self._socks_ok(reader, writer, writer.get_extra_info('sockname'))
-            await asyncio.gather(self._pump(writer, dst_reader),
-                                 self._pump(dst_writer, reader))
+            async with self._pool.borrow() as ssh_conn:
+                dst_reader, dst_writer = await ssh_conn.open_connection(dst_addr, dst_port)
+                await self._socks_ok(reader, writer, writer.get_extra_info('sockname'))
+                await asyncio.gather(self._pump(writer, dst_reader),
+                                     self._pump(dst_writer, reader))
         except asyncio.CancelledError:  # pylint: disable=try-except-raise
             raise
         except Exception as exc:  # pragma: no cover
