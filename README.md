@@ -124,6 +124,7 @@ rsp-trust -H myhostkeysfile example.net 2222
 
 ### Key generation utility
 
+```
 $ rsp-keygen --help
 usage: rsp-keygen [-h] [-f FILE]
                   [-t {ssh-ed25519,ssh-rsa,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,ssh-dss}]
