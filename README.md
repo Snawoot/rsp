@@ -1,7 +1,9 @@
 rsp
 ===
 
-Rapid SSH Proxy
+Rapid SSH Proxy. Like `ssh -ND`, but much faster.
+
+`rsp` is a SSH client which 
 
 ## Synopsis
 
@@ -67,21 +69,21 @@ SSH options:
 
 #### Usage examples
 
-Note: host keys must be added to trusted before proxy operation. See also synopsis for `rsp-trust` utility.
+Note: host keys must be added to trusted list before proxy operation. See synopsis for `rsp-trust` utility.
 
-Connect to example.com with SSH on port 22, using default pool size, and accept SOCKS5 connections on port 1080. Authentication using SSH Agent.
-
-```
-rsp example.com
-```
-
-Connect to example.net with SSH on port 2222, using private key in file `proxy_key`.
+Connect to example.com with SSH on port 22, using default pool size, and accept SOCKS5 connections on port 1080. Authentication is using SSH Agent and username `root`.
 
 ```
-rsp -I proxy_key example.net 2222
+rsp -L root example.com
 ```
 
-Connect to example.com with SSH on port 22, using password:
+Connect to example.net with SSH on port 2222, using private key in file `proxy_key` and username `user`.
+
+```
+rsp -I proxy_key -L user example.net 2222
+```
+
+Connect to example.com with SSH on port 22, using password and username of current user:
 
 ```
 rsp -P MyGoodPassword example.com
