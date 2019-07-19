@@ -25,6 +25,24 @@ Client is a Linux desktop (Fedora 30, Python 3.7.3, OpenSSH 8.0p1).
 | ------- | --- |
 | ![Speedtest - OpenSSH](https://www.speedtest.net/result/8425714040.png) | ![Speedtest - rsp](https://www.speedtest.net/result/8425718956.png) |
 
+## Installation
+
+Python 3.5.3+ required.
+
+From PyPI:
+
+```
+pip3 install rsp
+```
+
+From source (run in a source directory):
+
+```
+pip3 install .
+```
+
+Windows note: make sure you have Python3 installed and executable locations added into your PATH enviroment variable (it's an option available during install). Also make sure to run install command from Administrator command line.
+
 ## Synopsis
 
 ### Proxy
