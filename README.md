@@ -11,12 +11,13 @@ Rapid SSH Proxy. Like `ssh -ND`, but much faster.
 * Cross-platrorm (Windows, Linux, macOS and other Unix-like systems).
 * Zero-setup required for server. `rsp` can be used right away with any SSH server.
 * Self-sufficient: doesn't require OpenSSH on client side to operate.
+* SOCKS5 remote DNS support.
 * Connection establishment latency hidden from user with asynchronous connection pool.
 * Connection establishment rate limit guards user from being threated as SSH flood.
 
 ## Performance
 
-Tested with Debian 9 server through 100Mbps connection. Round trip time to server is 125 ms, average packet loss is about 0.5%.
+Tested with Debian 9 server through 100Mbps connection. Round trip time to server is 128 ms, average packet loss is about 0.5%.
 
 Client is a Linux desktop (Fedora 30, Python 3.7.3, OpenSSH\_8.0p1).
 
