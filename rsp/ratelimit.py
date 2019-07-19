@@ -26,7 +26,7 @@ class Ratelimit:
 
     async def wait(self):
         t = self._loop.time()
-        if self._last_released + self._delay < t:
+        if self._last_released + self._delay < t and not self._release_scheduled:
             self._last_released = t
         else:
             fut = self._loop.create_future()
