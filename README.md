@@ -5,7 +5,7 @@ Rapid SSH Proxy
 
 ## Synopsis
 
-### Proxy Daemon
+### Proxy
 
 ```
 $ rsp --help
@@ -65,6 +65,28 @@ SSH options:
                         /home/user/.rsp/known_hosts)
 ```
 
+#### Usage examples
+
+Note: host keys must be added to trusted before proxy operation. See also synopsis for `rsp-trust` utility.
+
+Connect to example.com with SSH on port 22, using default pool size, and accept SOCKS5 connections on port 1080. Authentication using SSH Agent.
+
+```
+rsp example.com
+```
+
+Connect to example.net with SSH on port 2222, using private key in file `proxy_key`.
+
+```
+rsp -I proxy_key example.net 2222
+```
+
+Connect to example.com with SSH on port 22, using password:
+
+```
+rsp -P MyGoodPassword example.com
+```
+
 ### Trust management utility
 
 ```
@@ -86,6 +108,20 @@ SSH options:
                         /home/user/.rsp/known_hosts)
 ```
 
+#### Usage examples
+
+Get host key from example.com, port 22
+
+```
+rsp-trust example.com
+```
+
+Get host key from example.net, port 2222 and use non-default location of trusted keys file:
+
+```
+rsp-trust -H myhostkeysfile example.net 2222
+```
+
 ### Key generation utility
 
 $ rsp-keygen --help
@@ -102,3 +138,13 @@ optional arguments:
                         key type (default: ssh-ed25519)
   -b BITS, --bits BITS  key type (default: 2048)
 ```
+
+#### Usage examples
+
+Generate SSH key with good default parameters:
+
+```
+rsp-keygen
+```
+
+Private and public key will be saved to `proxy_key` and `proxy_key.pub` respectively.
