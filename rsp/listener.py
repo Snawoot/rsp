@@ -33,7 +33,7 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
                  listen_address,
                  listen_port,
                  pool,
-                 timeout=None,
+                 timeout=4,
                  loop=None):
         self._loop = loop if loop is not None else asyncio.get_event_loop()
         self._logger = logging.getLogger(self.__class__.__name__)
@@ -42,6 +42,7 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
         self._children = set()
         self._server = None
         self._pool = pool
+        self._timeout = timeout
 
     async def stop(self):
         self._server.close()
@@ -163,7 +164,9 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
             self._logger.info("Client %s requested connection to %s:%s",
                               peer_addr, dst_addr, dst_port)
             async with self._pool.borrow() as ssh_conn:
-                dst_reader, dst_writer = await ssh_conn.open_connection(dst_addr, dst_port)
+                dst_reader, dst_writer = await asyncio.wait_for(
+                    ssh_conn.open_connection(dst_addr, dst_port),
+                    self._timeout)
                 await self._socks_ok(reader, writer, writer.get_extra_info('sockname'))
                 await asyncio.gather(self._pump(writer, dst_reader),
                                      self._pump(dst_writer, reader))
