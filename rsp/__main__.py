@@ -107,6 +107,13 @@ def ssh_options_from_args(args, known_hosts):
 async def amain(args, loop):  # pragma: no cover
     logger = logging.getLogger('MAIN')
     known_hosts = asyncssh.read_known_hosts(args.hosts_file)
+    matched_keys = known_hosts.match(args.dst_address, "", args.dst_port)[0]
+    if not matched_keys:
+        logger.critical("Specified host is not found in known hosts. "
+                        "Please run following command: "
+                        "rsp-trust '%s' %d",
+                        args.dst_address, args.dst_port)
+        return
     options = partial(ssh_options_from_args, args, known_hosts)
 
     ratelimit = Ratelimit(args.connect_rate)
