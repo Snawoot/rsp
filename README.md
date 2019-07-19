@@ -3,7 +3,7 @@ rsp
 
 Rapid SSH Proxy. Like `ssh -ND`, but much faster.
 
-`rsp` is a SSH client which implements SOCKS5 proxy feature of SSH protocol. Key feature of this implementation is use of multiple connections to overcome downsides of multiplexing many tunneled TCP connections in single SSH session. Multiple sessions are not limited with TCP window size of single connection and packet loss does not affect all tunneled connections. In order to cut latency of connection establishment `rsp` maintains pool of steady connections, which replenished with configurable rate.
+`rsp` is a SSH client which implements SOCKS5 proxy feature of SSH protocol. Key feature of this implementation is use of multiple connections to overcome downsides of multiplexing many tunneled TCP connections in single SSH session. Multiple sessions are not limited with TCP window size of single connection and packet loss does not affect all tunneled connections at once. In order to cut latency of connection establishment `rsp` maintains pool of steady connections, which replenished with configurable rate.
 
 ## Features
 
