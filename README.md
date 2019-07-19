@@ -16,7 +16,13 @@ Rapid SSH Proxy. Like `ssh -ND`, but much faster.
 
 ## Performance
 
-Tested with Debian 9 server 
+Tested with Debian 9 server via 100Mbps connection. Round trip time to server is 125 ms, about 0.5% average packet loss.
+
+Client is a Linux desktop (Fedora 30, Python 3.7.3, OpenSSH\_8.0p1).
+
+| OpenSSH | rsp |
+| ------- | --- |
+| ![Speedtest - OpenSSH](https://www.speedtest.net/result/8425714040.png) | ![Speedtest - rsp](https://www.speedtest.net/result/8425718956.png) |
 
 ## Synopsis
 
