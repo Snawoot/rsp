@@ -32,6 +32,7 @@ setup(name='rsp',
           'console_scripts': [
               'rsp=rsp.__main__:main',
               'rsp-trust=rsp.trust:main',
+              'rsp-keygen=rsp.keygen:main',
           ],
       },
       classifiers=[
