@@ -126,6 +126,10 @@ async def amain(args, loop):  # pragma: no cover
                    size=args.pool_size,
                    loop=loop)
     async with pool:
+        logger.warning("SSH connection pool is starting up. Pool target: "
+                       "%d steady connections. It will take at least %.2f "
+                       "seconds to reach it's full size.", args.pool_size,
+                       args.pool_size * 1. / args.connect_rate)
         server = SocksListener(listen_address=args.bind_address,
                           listen_port=args.bind_port,
                           timeout=args.timeout,

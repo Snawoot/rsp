@@ -192,7 +192,8 @@ class SocksListener:  # pylint: disable=too-many-instance-attributes
         self._server = await asyncio.start_server(_spawn,
                                                   self._listen_address,
                                                   self._listen_port)
-        self._logger.info("Server ready.")
+        self._logger.info("SOCKS5 server listening on %s:%d",
+                          self._listen_address, self._listen_port)
 
     async def __aenter__(self):
         await self.start()
