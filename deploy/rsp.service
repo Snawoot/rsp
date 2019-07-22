@@ -5,7 +5,7 @@ After=syslog.target network.target
 [Service]
 Type=notify
 User=nobody
-ExecStart=/usr/local/bin/rsp -I /var/lib/rsp/client_key -H /var/lib/rsp/known_hosts example.com 2222
+ExecStart=/usr/local/bin/rsp -I /var/lib/rsp/client_key -L username -H /var/lib/rsp/known_hosts example.com 2222
 Restart=always
 KillMode=process
 TimeoutStartSec=10
