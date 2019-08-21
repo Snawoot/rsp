@@ -53,6 +53,7 @@ usage: rsp [-h] [-v {debug,info,warn,error,fatal}] [-l FILE]
            [--disable-uvloop] [-a BIND_ADDRESS] [-p BIND_PORT] [-n POOL_SIZE]
            [-B BACKOFF] [-w TIMEOUT] [-r CONNECT_RATE] [-L LOGIN]
            [-I KEY_FILE] [-P PASSWORD] [-H FILE]
+           [--client-version CLIENT_VERSION]
            dst_address [dst_port]
 
 Rapid SSH Proxy
@@ -103,6 +104,8 @@ SSH options:
   -H FILE, --hosts-file FILE
                         overrides known_hosts file location (default:
                         /home/user/.rsp/known_hosts)
+  --client-version CLIENT_VERSION
+                        override client version string (default: None)
 ```
 
 #### Usage examples
