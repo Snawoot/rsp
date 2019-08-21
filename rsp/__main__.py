@@ -88,6 +88,8 @@ def parse_args():
                                                 'known_hosts'),
                            help="overrides known_hosts file location",
                            metavar="FILE")
+    ssh_group.add_argument("--client-version",
+                           help="override client version string")
 
     return parser.parse_args()
 
@@ -97,6 +99,8 @@ def ssh_options_from_args(args, known_hosts):
     kw['known_hosts'] = known_hosts
     if args.login is not None:
         kw['username'] = args.login
+    if args.client_version is not None:
+        kw['client_version'] = args.client_version
     if args.identity is not None:
         kw['client_keys'] = list(args.identity)
     if args.password is not None:
