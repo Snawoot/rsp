@@ -6,7 +6,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(name='rsp',
-      version='0.2.1',
+      version='0.3',
       description='Rapid SSH Proxy',
       url='https://github.com/Snawoot/rsp',
       author='Vladislav Yarmak',
