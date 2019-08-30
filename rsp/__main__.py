@@ -111,8 +111,9 @@ def ssh_options_from_args(args, known_hosts):
 async def amain(args, loop):  # pragma: no cover
     logger = logging.getLogger('MAIN')
     known_hosts = asyncssh.read_known_hosts(args.hosts_file)
-    matched_keys = known_hosts.match(args.dst_address, "", args.dst_port)[0]
-    if not matched_keys:
+    host_keys, ca_keys, _, x509_certs, _, x509_subjects, _ = \
+        known_hosts.match(args.dst_address, "", args.dst_port)
+    if not ( host_keys or ca_keys or x509_certs or x509_subjects ):
         logger.critical("Specified host is not found in known hosts. "
                         "Please run following command: "
                         "rsp-trust '%s' %d",
