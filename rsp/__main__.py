@@ -11,7 +11,7 @@ import os.path
 from sdnotify import SystemdNotifier
 import asyncssh
 
-from .listener import SocksListener
+from .sockslistener import SocksListener
 from .constants import LogLevel
 from . import utils
 from .ssh_pool import SSHPool
