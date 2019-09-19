@@ -15,3 +15,5 @@ class LogLevel(enum.IntEnum):
 
 
 BUFSIZE = 16 * 1024
+SO_ORIGINAL_DST = 80
+SOL_IPV6 = 41

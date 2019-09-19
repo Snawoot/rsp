@@ -7,6 +7,7 @@ import socket
 
 from .constants import BUFSIZE
 from .utils import detect_af
+from .baselistener import BaseListener
 
 
 class SocksException(Exception):
@@ -28,7 +29,7 @@ class BadAddress(SocksException):
 SOCKS5REQ = struct.Struct('!BBBB')
 
 
-class SocksListener:  # pylint: disable=too-many-instance-attributes
+class SocksListener(BaseListener):  # pylint: disable=too-many-instance-attributes
     def __init__(self, *,
                  listen_address,
                  listen_port,

@@ -11,7 +11,6 @@ import os.path
 from sdnotify import SystemdNotifier
 import asyncssh
 
-from .listener import SocksListener
 from .constants import LogLevel
 from . import utils
 from .ssh_pool import SSHPool
@@ -50,6 +49,9 @@ def parse_args():
                               default=1080,
                               type=utils.check_port,
                               help="bind port")
+    listen_group.add_argument("-T", "--transparent",
+                              action="store_true",
+                              help="transparent mode")
 
     pool_group = parser.add_argument_group('pool options')
     pool_group.add_argument("-n", "--pool-size",
@@ -141,7 +143,11 @@ async def amain(args, loop):  # pragma: no cover
                        "%d steady connections. It will take at least %.2f "
                        "seconds to reach it's full size.", args.pool_size,
                        args.pool_size * 1. / args.connect_rate)
-        server = SocksListener(listen_address=args.bind_address,
+        if args.transparent:
+            from .transparentlistener import TransparentListener as Listener
+        else:
+            from .sockslistener import SocksListener as Listener
+        server = Listener(listen_address=args.bind_address,
                           listen_port=args.bind_port,
                           timeout=args.timeout,
                           pool=pool,
@@ -168,6 +174,7 @@ def main():  # pragma: no cover
     with utils.AsyncLoggingHandler(args.logfile) as log_handler:
         logger = utils.setup_logger('MAIN', args.verbosity, log_handler)
         utils.setup_logger('SocksListener', args.verbosity, log_handler)
+        utils.setup_logger('TransparentListener', args.verbosity, log_handler)
         utils.setup_logger('SSHPool', args.verbosity, log_handler)
 
         logger.info("Starting eventloop...")
