@@ -6,7 +6,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(name='rsp',
-      version='0.4.0',
+      version='0.4.1',
       description='Rapid SSH Proxy',
       url='https://github.com/Snawoot/rsp',
       author='Vladislav Yarmak',
@@ -27,6 +27,7 @@ setup(name='rsp',
               'wheel>=0.31.0',
               'twine>=1.11.0',
           ],
+          'uvloop': 'uvloop>=0.11.0',
       },
       entry_points={
           'console_scripts': [
@@ -34,7 +35,6 @@ setup(name='rsp',
               'rsp-trust=rsp.trust:main',
               'rsp-keygen=rsp.keygen:main',
           ],
-          'uvloop': 'uvloop>=0.11.0',
       },
       classifiers=[
           "Programming Language :: Python :: 3.5",
