@@ -14,6 +14,7 @@ Rapid SSH Proxy. Like `ssh -ND`, but much faster.
 * SOCKS5 remote DNS support.
 * Connection establishment latency hidden from user with asynchronous connection pool.
 * Connection establishment rate limit guards user from being threated as SSH flood.
+* Supports transparent mode of operation (Linux only), which means rsp can be used on Linux gateway to wrap traffic of entire network seamlessly.
 
 ## Performance
 
@@ -50,9 +51,9 @@ Windows note: make sure you have Python3 installed and executable locations adde
 ```
 $ rsp --help
 usage: rsp [-h] [-v {debug,info,warn,error,fatal}] [-l FILE]
-           [--disable-uvloop] [-a BIND_ADDRESS] [-p BIND_PORT] [-n POOL_SIZE]
-           [-B BACKOFF] [-w TIMEOUT] [-r CONNECT_RATE] [-L LOGIN]
-           [-I KEY_FILE] [-P PASSWORD] [-H FILE]
+           [--disable-uvloop] [-a BIND_ADDRESS] [-p BIND_PORT] [-T]
+           [-n POOL_SIZE] [-B BACKOFF] [-w TIMEOUT] [-r CONNECT_RATE]
+           [-L LOGIN] [-I KEY_FILE] [-P PASSWORD] [-H FILE]
            [--client-version CLIENT_VERSION]
            dst_address [dst_port]
 
@@ -76,6 +77,7 @@ listen options:
                         bind address (default: 127.0.0.1)
   -p BIND_PORT, --bind-port BIND_PORT
                         bind port (default: 1080)
+  -T, --transparent     transparent mode (default: False)
 
 pool options:
   -n POOL_SIZE, --pool-size POOL_SIZE
@@ -129,6 +131,18 @@ Connect to example.com with SSH on port 22, using password and username of curre
 ```
 rsp -P MyGoodPassword example.com
 ```
+
+#### Transparent mode
+
+In order to use `rsp` in transparent mode you should add `-T` option to command line and redirect TCP traffic to `rsp` port like this:
+
+```sh
+iptables -I PREROUTING 1 -t nat -p tcp -s 192.168.0.0/16 '!' -d 192.168.0.0/16 -j REDIRECT --to 1080
+```
+
+In this example it is assumed your local network is covered by prefix 192.168.0.0/16 and `rsp` is running on it's default port 1080.
+
+**NOTE:** any application which supposed to accept `REDIRECT`-ed connection has to listen address on same interface where connection comes from. So, in this example you should also add command line option like `-a 192.168.0.1` or `-a 0.0.0.0` to rsp command line. Otherwise redirected connection will be refused. See also `man iptables-extension` for details on `REDIRECT` action of iptables.
 
 ### Trust management utility
 
