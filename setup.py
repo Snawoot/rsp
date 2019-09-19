@@ -34,6 +34,7 @@ setup(name='rsp',
               'rsp-trust=rsp.trust:main',
               'rsp-keygen=rsp.keygen:main',
           ],
+          'uvloop': 'uvloop>=0.11.0',
       },
       classifiers=[
           "Programming Language :: Python :: 3.5",
