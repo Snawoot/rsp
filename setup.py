@@ -18,7 +18,6 @@ setup(name='rsp',
           'wheel',
       ],
       install_requires=[
-          'sdnotify>=0.3.2',
           'asyncssh>=1.16.0',
       ],
       extras_require={
