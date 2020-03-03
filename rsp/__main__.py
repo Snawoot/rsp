@@ -156,17 +156,16 @@ async def amain(args, loop):  # pragma: no cover
             logger.info("Server started.")
 
             exit_event = asyncio.Event()
-            beat = asyncio.ensure_future(utils.heartbeat())
-            sig_handler = partial(utils.exit_handler, exit_event)
-            signal.signal(signal.SIGTERM, sig_handler)
-            signal.signal(signal.SIGINT, sig_handler)
-            async with AsyncSystemdNotifier() as notifier:
-                await notifier.notify(b"READY=1")
-                await exit_event.wait()
+            async with utils.Heartbeat():
+                sig_handler = partial(utils.exit_handler, exit_event)
+                signal.signal(signal.SIGTERM, sig_handler)
+                signal.signal(signal.SIGINT, sig_handler)
+                async with AsyncSystemdNotifier() as notifier:
+                    await notifier.notify(b"READY=1")
+                    await exit_event.wait()
 
-                logger.debug("Eventloop interrupted. Shutting down server...")
-                await notifier.notify(b"STOPPING=1")
-            beat.cancel()
+                    logger.debug("Eventloop interrupted. Shutting down server...")
+                    await notifier.notify(b"STOPPING=1")
 
 
 def main():  # pragma: no cover

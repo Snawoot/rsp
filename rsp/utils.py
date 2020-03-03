@@ -131,12 +131,40 @@ def exit_handler(exit_event, signum, frame):  # pragma: no cover pylint: disable
         exit_event.set()
 
 
-async def heartbeat():
-    """ Hacky coroutine which keeps event loop spinning with some interval
-    even if no events are coming. This is required to handle Futures and
-    Events state change when no events are occuring."""
-    while True:
-        await asyncio.sleep(.5)
+class Heartbeat:
+    def __init__(self, interval=.5):
+        self._interval = interval
+        self._beat = None
+
+    async def heartbeat(self):
+        while True:
+            await asyncio.sleep(self._interval)
+
+    async def heartbeat(self):
+        """ Hacky coroutine which keeps event loop spinning with some interval
+        even if no events are coming. This is required to handle Futures and
+        Events state change when no IO events are occuring."""
+        while True:
+            await asyncio.sleep(.5)
+
+    async def __aenter__(self):
+        return await self.start()
+
+    async def start(self):
+        if self._beat is None:
+            self._beat = asyncio.ensure_future(self.heartbeat())
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        return await self.stop()
+
+    async def stop(self):
+        self._beat.cancel()
+        while not self._beat.done():
+            try:
+                await self._beat
+            except asyncio.CancelledError:
+                pass
 
 
 def detect_af(addr):
