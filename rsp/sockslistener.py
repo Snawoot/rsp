@@ -136,22 +136,11 @@ class SocksListener(BaseListener):  # pylint: disable=too-many-instance-attribut
 
     async def _pump(self, writer, reader):
         while True:
-            try:
-                data = await reader.read(BUFSIZE)
-            except asyncio.CancelledError:
-                raise
-            except ConnectionResetError:
-                break
+            data = await reader.read(BUFSIZE)
             if not data:
                 break
             writer.write(data)
-
-            try:
-                await writer.drain()
-            except ConnectionResetError:
-                break
-            except asyncio.CancelledError:
-                raise
+            await writer.drain()
 
     async def handler(self, reader, writer):
         peer_addr = writer.transport.get_extra_info('peername')
@@ -169,10 +158,25 @@ class SocksListener(BaseListener):  # pylint: disable=too-many-instance-attribut
                     ssh_conn.open_connection(dst_addr, dst_port),
                     self._timeout)
                 await self._socks_ok(reader, writer, writer.get_extra_info('sockname'))
-                await asyncio.gather(self._pump(writer, dst_reader),
-                                     self._pump(dst_writer, reader))
+                t1 = asyncio.ensure_future(self._pump(writer, dst_reader))
+                t2 = asyncio.ensure_future(self._pump(dst_writer, reader))
+                try:
+                    await asyncio.gather(t1, t2)
+                finally:
+                    self._logger.debug("Client %s: gather finally begin", peer_addr)
+                    for t in (t1, t2):
+                        if not t.done():
+                            t.cancel()
+                            while not t.done():
+                                try:
+                                    await t
+                                except asyncio.CancelledError:
+                                    pass
+                    self._logger.debug("Client %s: gather finally end", peer_addr)
         except asyncio.CancelledError:  # pylint: disable=try-except-raise
             raise
+        except ConnectionResetError:
+            self._logger.debug("Connection for client %s has been reset", peer_addr)
         except Exception as exc:  # pragma: no cover
             self._logger.exception("Connection handler stopped with exception:"
                                    " %s", str(exc))

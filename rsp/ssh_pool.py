@@ -53,7 +53,7 @@ class SSHPool:
             self._tasks.clear()
             for t in tasks:
                 t.cancel()
-            await asyncio.gather(*tasks, return_exceptions=True)
+            await asyncio.wait(tasks)
         for conn in self._reserve:
             conn.abort()
 
