@@ -140,13 +140,6 @@ class Heartbeat:
         while True:
             await asyncio.sleep(self._interval)
 
-    async def heartbeat(self):
-        """ Hacky coroutine which keeps event loop spinning with some interval
-        even if no events are coming. This is required to handle Futures and
-        Events state change when no IO events are occuring."""
-        while True:
-            await asyncio.sleep(.5)
-
     async def __aenter__(self):
         return await self.start()
 
