@@ -22,6 +22,7 @@ parts:
       - make
       - python3-dev
       - libffi-dev
+      - libssl-dev
 
 apps:
   rsp:
