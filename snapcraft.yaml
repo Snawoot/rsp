@@ -1,0 +1,31 @@
+name: rsp
+version: '0.8.2'
+summary: Rapid SSH Proxy.
+description: |
+  rsp is a SSH client which implements SOCKS5 proxy feature of SSH protocol. 
+  Key feature of this implementation is use of multiple connections to 
+  overcome downsides of multiplexing many tunneled TCP connections in single 
+  SSH session. Multiple sessions are not limited with TCP window size of 
+  single connection and packet loss does not affect all tunneled connections 
+  at once. In order to cut latency of connection establishment rsp maintains 
+  pool of steady connections, which replenished with configurable rate.
+confinement: strict
+base: core18
+
+parts:
+  rsp:
+    plugin: python
+    python-version: python3
+    source: .
+    build-packages:
+      - gcc
+      - make
+      - python3-dev
+      - libffi-dev
+
+apps:
+  rsp:
+    command: bin/rsp
+    plugs:
+      - network
+      - network-bind
