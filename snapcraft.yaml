@@ -1,5 +1,5 @@
 name: rsp
-version: '0.8.2'
+version: '1.0.0'
 summary: Rapid SSH Proxy.
 description: |
   rsp is a SSH client which implements SOCKS5 proxy feature of SSH protocol. 
