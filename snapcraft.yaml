@@ -25,8 +25,14 @@ parts:
       - libssl-dev
 
 apps:
-  rsp:
+  proxy:
     command: bin/rsp
     plugs:
       - network
       - network-bind
+  trust:
+    command: bin/rsp-trust
+    plugs:
+      - network
+  keygen:
+    command: bin/rsp-keygen
