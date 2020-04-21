@@ -1,6 +1,8 @@
 rsp
 ===
 
+[![rsp](https://snapcraft.io//rsp/badge.svg)](https://snapcraft.io/rsp)
+
 Rapid SSH Proxy. Like `ssh -ND`, but much faster.
 
 `rsp` is a SSH client which implements SOCKS5 proxy feature of SSH protocol. Key feature of this implementation is use of multiple connections to overcome downsides of multiplexing many tunneled TCP connections in single SSH session. Multiple sessions are not limited with TCP window size of single connection and packet loss does not affect all tunneled connections at once. In order to cut latency of connection establishment `rsp` maintains pool of steady connections, which replenished with configurable rate.
@@ -28,21 +30,31 @@ Client is a Linux desktop (Fedora 30, Python 3.7.3, OpenSSH 8.0p1).
 
 ## Installation
 
-Python 3.5.3+ required.
+#### From PyPI
 
-From PyPI:
-
-```
+```sh
 pip3 install rsp
 ```
 
-From source (run in a source directory):
+#### From source
 
-```
+Run in a source directory:
+
+```sh
 pip3 install .
 ```
 
 Windows note: make sure you have Python3 installed and executable locations added into your PATH enviroment variable (it's an option available during install). Also make sure to run install command from Administrator command line.
+
+#### From Snap Store
+
+[![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/rsp)
+
+```sh
+sudo snap install rsp
+```
+
+Note: in snap version `rsp`, `rsp-trust` and `rsp-keygen` binaries have names `rsp.proxy`, `rsp.trust` and `rsp.keygen` respectively.
 
 ## Synopsis
 
