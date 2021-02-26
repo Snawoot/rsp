@@ -23,6 +23,7 @@ parts:
       - python3-dev
       - libffi-dev
       - libssl-dev
+      - cargo
 
 apps:
   proxy:
