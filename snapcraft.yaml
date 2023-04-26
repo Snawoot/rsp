@@ -10,12 +10,11 @@ description: |
   at once. In order to cut latency of connection establishment rsp maintains 
   pool of steady connections, which replenished with configurable rate.
 confinement: strict
-base: core18
+base: core22
 
 parts:
   rsp:
     plugin: python
-    python-version: python3
     source: .
     build-packages:
       - gcc
@@ -24,6 +23,7 @@ parts:
       - libffi-dev
       - libssl-dev
       - cargo
+      - pkg-config
 
 apps:
   proxy:
